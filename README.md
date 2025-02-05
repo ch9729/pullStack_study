@@ -121,3 +121,10 @@
 
     }
     ```
+
+- securityConfig 변경
+    ```javascript
+    포스트맨으로 전체 Note의 목록은 출력이 되었지만, Post로 Note를 생성하려고 하였으나 401 오류 발생
+    디버깅 결과 CSRF 보호로 인해 활성화된 상태에서 인증만으로 POST 요청을 처리하면 401 오류가 발생
+    보호 비활성화를 위해 http.csrf(AbstractHttpConfigurer::disable); 작성
+    ```
