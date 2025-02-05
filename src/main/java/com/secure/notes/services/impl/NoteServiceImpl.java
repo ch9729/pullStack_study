@@ -26,9 +26,9 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     public Note updateNoteForUser(Long noteId, String content, String username) {
-        Note note = noteRepository.findById(noteId).orElseThrow(() -> new RuntimeException("Note not found"));
+        Note note = noteRepository.findById(noteId).orElseThrow(()
+                -> new RuntimeException("Note not found"));
         note.setContent(content);
-        // 노트를 db에서 가져왔으므로 id가 있다. save시 업데이트가 된다.
         Note updatedNote = noteRepository.save(note);
         return updatedNote;
     }

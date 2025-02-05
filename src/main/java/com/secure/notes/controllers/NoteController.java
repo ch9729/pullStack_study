@@ -34,14 +34,14 @@ public class NoteController {
 
     // 노트 수정
     @PutMapping("/{noteId}")
-    public Note updateNote(@PathVariable long noteId, @RequestBody String content, @AuthenticationPrincipal UserDetails userDetails) {
+    public Note updateNote(@PathVariable Long noteId, @RequestBody String content, @AuthenticationPrincipal UserDetails userDetails) {
         String username = userDetails.getUsername();
-        return noteService.updateNoteForUser(noteId, username, content);
+        return noteService.updateNoteForUser(noteId, content, username);
     }
 
     // 노트 삭제
     @DeleteMapping("/{noteId}")
-    public void deleteNote(@PathVariable long noteId, @AuthenticationPrincipal UserDetails userDetails) {
+    public void deleteNote(@PathVariable Long noteId, @AuthenticationPrincipal UserDetails userDetails) {
         String username = userDetails.getUsername();
         noteService.deleteNoteForUser(noteId, username);
     }
