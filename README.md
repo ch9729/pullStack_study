@@ -35,3 +35,89 @@
     ```
 
 ## 2일차
+- Note 서비스 구현
+
+    ```javascript
+    @Service
+    public class NoteServiceImpl implements NoteService {
+
+    @Autowired  // 의존성 주입
+    private NoteRepository noteRepository;
+    
+    @Override   
+    public Note createNoteForUser(String username, String content) {    //Note 추가
+        Note note = new Note(); //Note 객체를 생성
+        note.setContent(content);   // 추가
+        note.setOwnerUsername(username);    //추가
+        Note savedNote = noteRepository.save(note); //추가 한 값들을 저장
+        return savedNote;
+    }
+
+    @Override
+    public Note updateNoteForUser(Long noteId, String content, String username) {   //Note 수정(userID값을 가져와 수정)
+        Note note = noteRepository.findById(noteId).orElseThrow(()  // 1일차에 작성한 해당 id값이 존재하지 않으면 오류 발생
+                -> new RuntimeException("Note not found"));
+        note.setContent(content);
+        Note updatedNote = noteRepository.save(note);   //jpa는 추가와 변경 모두 save()를 사용
+        return updatedNote;
+    }
+
+    @Override
+    public void deleteNoteForUser(Long noteId, String username) {   //Note 삭제(userID값을 가져와 삭제)
+        noteRepository.deleteById(noteId);
+    }
+
+    @Override
+    public List<Note> getNotesForUser(String username) {    //Note 전체보기(username을 통하여 List 반환)
+        List<Note> personalNotes = noteRepository
+                .findByOwnerUsername(username);
+        return personalNotes;
+        }
+    }
+    ```
+  
+- Note 컨트롤러 구현
+
+    ```javascript
+    @RestController
+    @RequestMapping("/api/notes")   //해당 컨트롤러 공동으로 기본 url을 사용하도록 설정
+    public class NoteController {
+
+    @Autowired  //의존성 주입
+    private NoteService noteService;
+
+    // 노트 추가
+    @PostMapping
+    public Note createNote(@RequestBody String content, @AuthenticationPrincipal UserDetails userDetails) {
+    // RequestBody = 요청값을 자바 객체로 반환, 
+    // AuthenticationPrincipal = 세션 정보 UserDetails에 접근할 수 있는 어노테이션 (로그인 세션 정보가 필요한 컨트롤러에서 정보를 받아서 사용)
+        String username = userDetails.getUsername();
+        System.out.println("USER: " + username);
+        return noteService.createNoteForUser(username, content);
+        }
+
+    // 노트 전체 가져오기
+    @GetMapping
+    public List<Note> getUserNotes(@AuthenticationPrincipal UserDetails userDetails) {
+        String username = userDetails.getUsername();
+        System.out.println("USER: " + username);
+        return noteService.getNotesForUser(username);
+        }
+
+    // 노트 수정
+    @PutMapping("/{noteId}")
+    public Note updateNote(@PathVariable Long noteId, @RequestBody String content, @AuthenticationPrincipal UserDetails userDetails) {
+        String username = userDetails.getUsername();
+        return noteService.updateNoteForUser(noteId, content, username);
+        }
+
+    // 노트 삭제
+    @DeleteMapping("/{noteId}")
+    public void deleteNote(@PathVariable Long noteId, @AuthenticationPrincipal UserDetails userDetails) {
+    //PathVariable = 경로 변수를 표시하기 위해 메서드에 매개변수에 사용, {}로 둘러싸인 값
+        String username = userDetails.getUsername();
+        noteService.deleteNoteForUser(noteId, username);
+        }
+
+    }
+    ```
