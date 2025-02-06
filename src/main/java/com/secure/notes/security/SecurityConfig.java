@@ -36,7 +36,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    //CommandLineRunner 스프링 부트 구동 시점에 특정 코드 실행 (미리 ㅜ건한 테이블에 유저, 어드민 권한 저장하고 만든다(테스트용))
+    //CommandLineRunner 스프링 부트 구동 시점에 특정 코드 실행 (미리 권한 테이블에 유저, 어드민 권한 저장하고 만든다(테스트용))
     @Bean
     public CommandLineRunner initData(RoleRepository roleRepository,
                                       UserRepository userRepository) {
