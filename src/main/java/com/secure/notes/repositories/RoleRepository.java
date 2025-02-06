@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface ReleRepository extends JpaRepository<Role, Long> {
-    Optional<Role> findByRoleName(AppRole role);
+public interface RoleRepository extends JpaRepository<Role, Long> {
+    // 유저권한을 role 테이블에서 찾음
+    Optional<Role> findByRoleName(AppRole appRole);
 }
