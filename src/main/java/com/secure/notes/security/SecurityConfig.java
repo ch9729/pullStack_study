@@ -30,6 +30,7 @@ public class SecurityConfig {
                 requests
                         // .requestMatchers("/contact").permitAll()
                         // .requestMatchers("/public/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()));
         http.csrf(AbstractHttpConfigurer::disable); //CSRF 중지
         //http.formLogin(withDefaults());
