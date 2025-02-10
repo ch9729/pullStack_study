@@ -12,4 +12,7 @@ public interface UserService {
     List<User> getAllUsers();
 
     UserDTO getUserById(Long id);
+    
+    // 유저 정보 가져오기
+    User findByUsername(String username);
 }

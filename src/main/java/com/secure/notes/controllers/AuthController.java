@@ -10,6 +10,7 @@ import com.secure.notes.security.request.LoginRequest;
 import com.secure.notes.security.request.SignupRequest;
 import com.secure.notes.security.response.LoginResponse;
 import com.secure.notes.security.response.MessageResponse;
+import com.secure.notes.security.response.UserInfoResponse;
 import com.secure.notes.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,13 +20,11 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -93,49 +92,83 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-@PostMapping("/public/signup")
-public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
-    if (userRepository.existsByUserName(signUpRequest.getUsername())) {
-        return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
-    }
-
-    if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-        return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
-    }
-
-    // Create new user's account
-    User user = new User(signUpRequest.getUsername(),
-            signUpRequest.getEmail(),
-            encoder.encode(signUpRequest.getPassword()));
-
-    Set<String> strRoles = signUpRequest.getRole();
-    Role role;
-
-    if (strRoles == null || strRoles.isEmpty()) {
-        role = roleRepository.findByRoleName(AppRole.ROLE_USER)
-                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-    } else {
-        String roleStr = strRoles.iterator().next();
-        if (roleStr.equals("admin")) {
-            role = roleRepository.findByRoleName(AppRole.ROLE_ADMIN)
-                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-        } else {
-            role = roleRepository.findByRoleName(AppRole.ROLE_USER)
-                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+    //회원가입
+    @PostMapping("/public/signup")
+    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
+        // 유저네임 중복방지
+        if (userRepository.existsByUserName(signUpRequest.getUsername())) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
         }
 
-        user.setAccountNonLocked(true);
-        user.setAccountNonExpired(true);
-        user.setCredentialsNonExpired(true);
-        user.setEnabled(true);
-        user.setCredentialsExpiryDate(LocalDate.now().plusYears(1));
-        user.setAccountExpiryDate(LocalDate.now().plusYears(1));
-        user.setTwoFactorEnabled(false);
-        user.setSignUpMethod("email");
-    }
-    user.setRole(role);
-    userRepository.save(user);
+        // 이메일 중복방지
+        if (userRepository.existsByEmail(signUpRequest.getEmail())) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
+        }
 
-    return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
-}
+        // 새 유저 생성
+        User user = new User(signUpRequest.getUsername(),
+                signUpRequest.getEmail(),
+                encoder.encode(signUpRequest.getPassword()));
+        // 권한 리스트 (시큐리티 유저 저장시 권한 리스트 필요)
+        Set<String> strRoles = signUpRequest.getRole();
+        Role role;
+
+        // 클라이언트에서 문자열 admin일 경우관리자 권한 나머지는 유저권한
+        if (strRoles == null || strRoles.isEmpty()) {
+            role = roleRepository.findByRoleName(AppRole.ROLE_USER)
+                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+        } else {
+            String roleStr = strRoles.iterator().next();
+            if (roleStr.equals("admin")) {
+                role = roleRepository.findByRoleName(AppRole.ROLE_ADMIN)
+                        .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+            } else {
+                role = roleRepository.findByRoleName(AppRole.ROLE_USER)
+                        .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+            }
+
+            user.setAccountNonLocked(true);
+            user.setAccountNonExpired(true);
+            user.setCredentialsNonExpired(true);
+            user.setEnabled(true);
+            user.setCredentialsExpiryDate(LocalDate.now().plusYears(1));
+            user.setAccountExpiryDate(LocalDate.now().plusYears(1));
+            user.setTwoFactorEnabled(false);
+            user.setSignUpMethod("email");  // 이메일 가입방법
+        }
+        user.setRole(role);
+        userRepository.save(user);
+
+        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    }
+
+    // 한명의 유저 정보를 가져오기
+    @GetMapping("/user")
+    public ResponseEntity<?> getUserDetails(@AuthenticationPrincipal UserDetails userDetails) {
+        //@AuthenticationPrincipal  UserDetails userDetails
+        // 로그인한 사용자 정보를 어노테이션을 통해 간편하게 받고싶다.
+        // Principal principal 객체는 오직 유저 name 정보만 알 수 있다.
+        // 정보는 name뿐이 아닌 Account의 많은 정보를 받고싶다.
+        User user = userService.findByUsername(userDetails.getUsername());
+
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(item -> item.getAuthority())
+                .collect(Collectors.toList());
+
+        UserInfoResponse response = new UserInfoResponse(
+                user.getUserId(),
+                user.getUserName(),
+                user.getEmail(),
+                user.isAccountNonLocked(),
+                user.isAccountNonExpired(),
+                user.isCredentialsNonExpired(),
+                user.isEnabled(),
+                user.getCredentialsExpiryDate(),
+                user.getAccountExpiryDate(),
+                user.isTwoFactorEnabled(),
+                roles
+        );
+
+        return ResponseEntity.ok().body(response);
+    }
 }

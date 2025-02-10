@@ -15,5 +15,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 유저네임으로 유저가 있는지 확인
     Boolean existsByUserName(String username);
 
-    boolean existsByEmail(@NotBlank @Size(max = 50) @Email String email);
+    // 이메일로 유저가 있는지 확인
+    Boolean existsByEmail(String email);
 }
