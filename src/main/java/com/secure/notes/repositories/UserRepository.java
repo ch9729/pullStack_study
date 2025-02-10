@@ -1,6 +1,9 @@
 package com.secure.notes.repositories;
 
 import com.secure.notes.models.User;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -11,4 +14,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // 유저네임으로 유저가 있는지 확인
     Boolean existsByUserName(String username);
+
+    boolean existsByEmail(@NotBlank @Size(max = 50) @Email String email);
 }

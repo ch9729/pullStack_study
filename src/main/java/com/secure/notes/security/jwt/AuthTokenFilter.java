@@ -17,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+// jwt 토큰 인증 담당 필터
 @Component
 public class AuthTokenFilter extends OncePerRequestFilter {
     @Autowired
