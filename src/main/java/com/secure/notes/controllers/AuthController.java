@@ -26,6 +26,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -170,5 +171,10 @@ public class AuthController {
         );
 
         return ResponseEntity.ok().body(response);
+    }
+
+    @GetMapping("/username")
+    public String getUsername(Principal principal) {
+        return principal.getName() != null ? principal.getName() : "";
     }
 }
