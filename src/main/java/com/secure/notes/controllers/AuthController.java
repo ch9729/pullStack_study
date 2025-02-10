@@ -172,7 +172,8 @@ public class AuthController {
 
         return ResponseEntity.ok().body(response);
     }
-
+    
+    // 인증된 유저이름 가져오기
     @GetMapping("/username")
     public String getUsername(Principal principal) {
         return principal.getName() != null ? principal.getName() : "";

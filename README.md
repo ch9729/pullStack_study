@@ -128,3 +128,107 @@
     디버깅 결과 CSRF 보호로 인해 활성화된 상태에서 인증만으로 POST 요청을 처리하면 401 오류가 발생
     보호 비활성화를 위해 http.csrf(AbstractHttpConfigurer::disable); 작성
     ```
+  
+
+## 3일차
+- Auth API 인증 API 제작
+
+![img.png](img.png)
+
+
+- 가입
+  ```javascript
+   @PostMapping("/public/signup")
+    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
+        // 현재 있는 username일 경우에 메시지 전환
+        if (userRepository.existsByUserName(signUpRequest.getUsername())) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
+        }
+        // 현재 있는 email일 경우에 메시지 전환
+        if (userRepository.existsByEmail(signUpRequest.getEmail())) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
+        }
+
+        // 유저 등록
+        User user = new User(signUpRequest.getUsername(),
+                signUpRequest.getEmail(),
+                encoder.encode(signUpRequest.getPassword()));
+
+        Set<String> strRoles = signUpRequest.getRole();
+        Role role;
+
+        if (strRoles == null || strRoles.isEmpty()) {
+            role = roleRepository.findByRoleName(AppRole.ROLE_USER)
+                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+        } else {
+            String roleStr = strRoles.iterator().next();
+            if (roleStr.equals("admin")) {
+                role = roleRepository.findByRoleName(AppRole.ROLE_ADMIN)
+                        .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+            } else {
+                role = roleRepository.findByRoleName(AppRole.ROLE_USER)
+                        .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+            }
+
+            user.setAccountNonLocked(true);
+            user.setAccountNonExpired(true);
+            user.setCredentialsNonExpired(true);
+            user.setEnabled(true);
+            user.setCredentialsExpiryDate(LocalDate.now().plusYears(1));
+            user.setAccountExpiryDate(LocalDate.now().plusYears(1));
+            user.setTwoFactorEnabled(false);
+            user.setSignUpMethod("email");
+        }
+        user.setRole(role);
+        // 유저 저장
+        userRepository.save(user);
+
+        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    }
+  ```
+- 인증된 유저 정보 가져오기
+  ```javascript
+     @GetMapping("/user")
+    public ResponseEntity<?> getUserDetails(@AuthenticationPrincipal UserDetails userDetails) {
+       //@AuthenticationPrincipal은 로그인한 사용자 정보를 어노테이션을 통해 간편하게 받아올수 있다.
+        User user = userService.findByUsername(userDetails.getUsername());
+
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(item -> item.getAuthority())
+                .collect(Collectors.toList());
+
+        UserInfoResponse response = new UserInfoResponse(
+                user.getUserId(),
+                user.getUserName(),
+                user.getEmail(),
+                user.isAccountNonLocked(),
+                user.isAccountNonExpired(),
+                user.isCredentialsNonExpired(),
+                user.isEnabled(),
+                user.getCredentialsExpiryDate(),
+                user.getAccountExpiryDate(),
+                user.isTwoFactorEnabled(),
+                roles
+        );
+
+        return ResponseEntity.ok().body(response);
+    }
+  ```
+    -  UserServiceImpl에 유저네임으로 유저를 찾는 메소드를 만들어 @Override로 인터페이스에 추상 메서드 만들기
+  ```javascript
+      @Override
+        public User findByUsername(String username) {
+            Optional<User> user = userRepository.findByUserName(username);
+            return user.orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+      }
+  ```
+  
+  - 인증된 유저 이름만 가져오기
+  ```javascript
+    @GetMapping("/username")
+    public String getUsername(Principal principal) {
+        // 삼항연산자
+        // name이 null이 아니면 name출력, null이면 빈문자열 반환 
+        return principal.getName() != null ? principal.getName() : "";
+    }
+  ```
