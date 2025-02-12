@@ -23,6 +23,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.time.LocalDate;
 
@@ -36,7 +37,9 @@ public class SecurityConfig {
     @Autowired
     // 인증 실패시 실행 객체
     private AuthEntryPointJwt unauthorizedHandler;
-    
+
+    @Autowired
+    private CorsConfigurationSource corsConfigurationSource;
     // jwt 토큰 인증 필터
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
@@ -45,6 +48,7 @@ public class SecurityConfig {
 
     @Bean   //Configuration 필수
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource));
         http.csrf(AbstractHttpConfigurer::disable); //CSRF 중지
         http.authorizeHttpRequests(((requests) ->
                 requests
