@@ -182,6 +182,12 @@ public class AuthController {
     // 비번을 잊었을때 요청(인증없이 가능)
     @PostMapping("/public/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestParam String email) {
-        return null;
+        try {
+            userService.generatePasswordResetToken(email);
+            return ResponseEntity.ok(new MessageResponse("패스워드 리셋 이메일 보냄"));
+        }catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new MessageResponse("패스워드 리셋 이메일 보내는데 실패했습니다."));
+        }
     }
 }
