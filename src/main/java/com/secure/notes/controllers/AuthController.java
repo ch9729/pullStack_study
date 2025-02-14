@@ -178,4 +178,10 @@ public class AuthController {
     public String getUsername(Principal principal) {
         return principal.getName() != null ? principal.getName() : "";
     }
+
+    // 비번을 잊었을때 요청(인증없이 가능)
+    @PostMapping("/public/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestParam String email) {
+        return null;
+    }
 }

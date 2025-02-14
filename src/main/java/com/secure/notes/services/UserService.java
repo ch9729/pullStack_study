@@ -34,4 +34,6 @@ public interface UserService {
 
     // 패스워드 업데이트
     void updatePassword(Long userId, String password);
+
+    void generatePasswordResetToken(String email);
 }
