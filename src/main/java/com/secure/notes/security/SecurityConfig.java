@@ -1,5 +1,6 @@
 package com.secure.notes.security;
 
+import com.secure.notes.config.OAuth2LoginSuccessHandler;
 import com.secure.notes.models.AppRole;
 import com.secure.notes.models.Role;
 import com.secure.notes.models.User;
@@ -9,10 +10,12 @@ import com.secure.notes.security.jwt.AuthEntryPointJwt;
 import com.secure.notes.security.jwt.AuthTokenFilter;
 import com.secure.notes.security.services.CustomLoggingFilter;
 import io.github.cdimascio.dotenv.Dotenv;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -44,6 +47,11 @@ public class SecurityConfig {
 
     @Autowired
     private CorsConfigurationSource corsConfigurationSource;
+
+    @Autowired
+    @Lazy
+    private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+
     // jwt 토큰 인증 필터
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
@@ -54,14 +62,17 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource));
         http.csrf(AbstractHttpConfigurer::disable); //CSRF 중지
-        http.authorizeHttpRequests(((requests) ->
+        http.authorizeHttpRequests(requests ->
                 requests
                         // .requestMatchers("/contact").permitAll()
                         // .requestMatchers("/public/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/auth/public/**").permitAll() // 인증요청주소를 시큐리티에 제외
                         .requestMatchers("/oauth2/**").permitAll()
-                .anyRequest().authenticated()));
+                .anyRequest().authenticated())
+                .oauth2Login(oauth2 -> {
+                    oauth2.successHandler(oAuth2LoginSuccessHandler);
+                });
 
         //http.formLogin(withDefaults());
         // jwt 인증 에러시 예외설정
@@ -148,5 +159,12 @@ public class SecurityConfig {
         props.put("mail.debug", "true"); // 디버깅 로그 활성화
 
         return mailSender;
+    }
+
+    @PostConstruct
+    public void loadEnv() {
+        Dotenv dotenv = Dotenv.load();
+        System.setProperty("GIT_CLIENT_ID", dotenv.get("GIT_CLIENT_ID"));
+        System.setProperty("GIT_CLIENT_SECRET", dotenv.get("GIT_CLIENT_SECRET"));
     }
 }

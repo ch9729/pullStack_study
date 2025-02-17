@@ -5,6 +5,7 @@ import com.secure.notes.models.Role;
 import com.secure.notes.models.User;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface UserService {
 
@@ -40,4 +41,11 @@ public interface UserService {
 
     // 새 패스워드 업데이트
     void resetPassword(String token, String newPassword);
+
+    // 이메일로 유저 찾기
+    Optional<User> findByEmail(String email);
+
+    // oauth 가입한 유저를 새로 입력
+    User registerUser(User user);
+
 }
