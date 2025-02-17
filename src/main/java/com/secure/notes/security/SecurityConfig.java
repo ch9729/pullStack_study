@@ -60,6 +60,7 @@ public class SecurityConfig {
                         // .requestMatchers("/public/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/auth/public/**").permitAll() // 인증요청주소를 시큐리티에 제외
+                        .requestMatchers("/oauth2/**").permitAll()
                 .anyRequest().authenticated()));
 
         //http.formLogin(withDefaults());
